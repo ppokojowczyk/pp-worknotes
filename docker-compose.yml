@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+    app:
+        image: node:14.18.1
+        working_dir: /home/node/app
+        environment:
+            - NODE_ENV=${NODE_ENV}
+        volumes:
+            - ./app:/home/node/app
+            - ./database:/home/node/database
+        command: |
+            bash -c 'npm install;\
+            [[ $NODE_ENV = "production" ]] && npm start || npm run start:dev'
+        ports:
+            - ${APP_PORT}:3000
+            - 8081:8081
