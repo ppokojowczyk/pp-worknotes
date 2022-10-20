@@ -27,7 +27,7 @@ const ListItem = (props) => {
                 onClick={() => {
                     props.onClick(props.id);
                 }}
-                key={props.id}
+                key={props.key}
                 href="#"
                 className={`note list-group-item list-group-item-action py-3 lh-tight ${props.active ? 'note--active' : ''}`}
                 aria-current="true">

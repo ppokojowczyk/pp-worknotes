@@ -55,6 +55,8 @@ export const NotesProvider = (props) => {
 
     const [firstLoad, setFirstLoad] = useState(false);
 
+    const [tempIdCount, setTempIdCount] = useState(0);
+
     const clearNotes = () => {
         setNotes(prevState => {
             const notes = [];
@@ -67,27 +69,66 @@ export const NotesProvider = (props) => {
         });
     };
 
-    const updateNote = (index, field, value) => {
+    const findNoteIndex = (id) => {
+        let index = null;
+        for (const note of notes) {
+            if (note.id === id) {
+                index = notes.indexOf(note);
+            }
+        }
+        return index;
+    }
+
+    const isTempNote = (note) => {
+        if (!note) {
+            throw Error("Invalid note.");
+        }
+        if (!note.id) {
+            throw Error("Invalid note id.");
+        }
+        return (note.id.toString().indexOf("TEMP") !== -1);
+    }
+
+    const updateNote = (id, field, value, callback) => {
+        const index = findNoteIndex(id);
+        if (index === null) {
+            throw new Error("Index not found.");
+        }
         setNotes(prevState => {
             let newNotes = [...prevState];
             newNotes[index][field] = value;
             return newNotes;
         });
-        saveNote(notes[index]);
+        saveNote(notes[index], callback);
     }
 
-    const saveNote = (note) => {
+    const saveNote = (note, callback) => {
         if (updateTimeout !== null) {
             clearTimeout(updateTimeout);
         }
         updateTimeout = setTimeout(() => {
             setLoading(true);
-            (note.id ? _updateNote(note) : _newNote(note)).then(() => {
-            }, () => {
-            }).finally(() => {
-                setLoading(false);
-                reloadData();
-            });
+            let isTemp = false;
+
+            if (isTempNote(note)) {
+                delete note.id;
+                isTemp = true;
+            }
+
+            let newId = null;
+
+            (note.id ? _updateNote(note) : _newNote(note))
+                .then((response) => {
+                    newId = response.data || null;
+                }, () => {
+                }).finally(() => {
+                    setLoading(false);
+                    reloadData(() => {
+                        callback(isTemp ? newId : null);
+                    });
+                }).catch(() => {
+                    throw Error("Something bad happened.");
+                })
             updateTimeout = null;
         }, 1000);
     }
@@ -95,6 +136,7 @@ export const NotesProvider = (props) => {
     const newNote = () => {
         clearNotes();
         const note = {
+            id: `TEMP_${tempIdCount}`,
             title: '',
             content: '',
             date: new Date()
@@ -102,18 +144,22 @@ export const NotesProvider = (props) => {
         setNotes(prevState => {
             return [note, ...prevState];
         });
+        setTempIdCount(tempIdCount + 1);
+        return note.id;
     }
 
-    const reloadData = () => {
+    const reloadData = (callback = null) => {
         setLoading(true);
         loadData().then(data => {
             setNotes(data);
+            typeof callback === 'function' && callback();
         }).finally(() => {
             setLoading(false);
         });
     }
 
-    const deleteNote = (noteId, noteIndex) => {
+    const deleteNote = (noteId) => {
+        const noteIndex = findNoteIndex(noteId);
         if (noteIndex >= 0) {
             setNotes(prevState => {
                 const notes = [...prevState];

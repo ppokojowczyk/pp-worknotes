@@ -8,7 +8,10 @@ const Triangle = (props) => {
                 borderWidth: '0 ' + props.size + 'px ' + props.size + 'px 0',
                 borderColor: 'transparent ' + props.color + ' transparent transparent'
             }}
-            onClick={props.onClick}
+            onClick={(e) => {
+                e.stopPropagation();
+                props.onClick();
+            }}
         ><div
             className="triangle__content"
         >{props.children}</div></div >

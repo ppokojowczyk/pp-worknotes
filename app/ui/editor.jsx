@@ -3,10 +3,6 @@ import { Col, Container, Form, FormLabel, InputGroup, Row } from 'react-bootstra
 
 const Editor = (props) => {
 
-    const [title, setTitle] = useState('');
-
-    const [content, setContent] = useState('');
-
     const handleChange = (event) => {
         props.onChange(event.target.name, event.target.value);
     }
@@ -24,6 +20,7 @@ const Editor = (props) => {
                                 value={props.title}
                                 maxLength={50}
                                 onChange={handleChange}
+                                autoFocus={true}
                             />
                         </Col>
                     </Row>

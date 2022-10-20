@@ -10,9 +10,9 @@ const ItemsList = (props) => {
                     content={note.content}
                     date={note.date}
                     onClick={props.onClick}
-                    key={index}
-                    id={index}
-                    active={index === props.activeNoteIndex}
+                    key={note.id}
+                    id={note.id}
+                    active={note.id === props.activeNoteId}
                     onDelete={() => props.onDelete(note.id, index)}
                 />
             })}

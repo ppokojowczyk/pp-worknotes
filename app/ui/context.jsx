@@ -4,12 +4,15 @@ import ItemsList from './items-list.jsx';
 import Menu from './menu.jsx';
 import Footer from './footer.jsx';
 import { getNotes, NotesProviderContext } from './notes-provider.jsx';
+import { useEffect } from 'react';
 
-const Context = (props) => {
+const Context = () => {
 
-    const [noteIndex, setNoteIndex] = useState(0);
+    const [activeNoteId, setActiveNoteId] = useState(null);
 
     const [filter, setFilter] = useState('');
+
+    const [activeNote, setActiveNote] = useState({});
 
     const notes = getNotes();
 
@@ -26,6 +29,52 @@ const Context = (props) => {
         return notes;
     };
 
+    const findNote = (id) => {
+        let foundNote = null;
+        for (const note of notes) {
+            if (note.id === id) {
+                foundNote = note;
+            }
+        }
+        return foundNote;
+    }
+
+    const renderEditor = (updateNote) => {
+        return activeNoteId ? <Editor
+            title={activeNote.title}
+            content={activeNote.content}
+            onChange={(field, value) => {
+                const d = { ...activeNote };
+                d[field] = value;
+                setActiveNote(d);
+                updateNote(activeNoteId, field, value, (newId) => {
+                    newId && setActiveNoteId(newId);
+                });
+            }}
+        /> : <></>;
+    }
+
+    useEffect(() => setActiveNoteId(null), [filter]);
+
+    useEffect(() => {
+        changeActiveNote(activeNoteId);
+    }, [activeNoteId]);
+
+    const changeActiveNote = (id) => {
+        const note = findNote(id);
+        setActiveNote(note ? {
+            title: note.title,
+            content: note.content
+        } : {});
+    }
+
+    const onDelete = (id, deleteNote) => {
+        (id !== undefined ? confirm(`Do you wan't to delete this note?`) : true) && (() => {
+            deleteNote(id);
+            activeNoteId === id && setActiveNoteId(null);
+        })();
+    }
+
     return (
         <NotesProviderContext.Consumer>
             {({ updateNote, newNote, deleteNote, reloadData }) => (
@@ -39,8 +88,11 @@ const Context = (props) => {
                         }}>
                             <Menu
                                 onNew={() => {
-                                    newNote();
-                                    setNoteIndex(0);
+                                    const newNoteId = newNote();
+                                    if (newNoteId === null) {
+                                        throw Error("Missing note Id.");
+                                    }
+                                    setActiveNoteId(newNoteId);
                                 }}
                                 onRefresh={() => {
                                     reloadData();
@@ -51,20 +103,16 @@ const Context = (props) => {
                             />
                             <ItemsList
                                 notes={getFiltered()}
-                                activeNoteIndex={noteIndex}
-                                onClick={(id) => setNoteIndex(id)}
-                                onDelete={(noteId, noteIndex) => (noteId !== undefined ? confirm("Do you wan't to delete this note?") : true) && deleteNote(noteId, noteIndex)}
+                                activeNoteId={activeNoteId}
+                                onClick={(id) => {
+                                    setActiveNoteId(id);
+                                }}
+                                onDelete={(id) => onDelete(id, deleteNote)}
                             />
                             <Footer>pp-worknotes | <a href="https://github.com/ppokojowczyk/pp-worknotes/">git repository</a></Footer>
                         </div>
                         <div className="editor-wrapper">
-                            {notes[noteIndex] && <Editor
-                                title={notes[noteIndex].title}
-                                content={notes[noteIndex].content}
-                                onChange={(field, value) => {
-                                    updateNote(noteIndex, field, value);
-                                }}
-                            />}
+                            {renderEditor(updateNote)}
                         </div>
                     </div>
                     <div>
