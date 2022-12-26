@@ -60,8 +60,21 @@ const Context = () => {
         changeActiveNote(activeNoteId);
     }, [activeNoteId]);
 
+    useEffect(() => {
+        let id = null;
+        if (window.location.hash) {
+            id = window.location.hash.replace('#', '');
+        }
+        if (id) {
+            setTimeout(() => setActiveNoteId(parseInt(id)), 500);
+        }
+    }, []);
+
     const changeActiveNote = (id) => {
         const note = findNote(id);
+        if (note) {
+            window.history.pushState({}, undefined, '/#' + id);
+        }
         setActiveNote(note ? {
             title: note.title,
             content: note.content
